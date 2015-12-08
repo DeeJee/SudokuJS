@@ -1,0 +1,2 @@
+RuntimeMethodInfo.UnsafeInvokeInternal => RuntimeMethodHandle.InvokeMethod => WebApiApplication.Application_Start Application started
+2015-11-30 22:14:14.0571|INFO|SudokuData.WebApiApplication|Application started
