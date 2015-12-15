@@ -1,30 +1,31 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using NLog;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Hosting;
 using System.Web.Http;
 
 namespace SudokuData.Controllers
 {
     public class LogController : ApiController
     {
-        Logger Log = LogManager.GetLogger("javascript");
+        Logger internalLogger = LogManager.GetCurrentClassLogger();
+        private static readonly Chronologger logger = new Chronologger();
         public JToken Get(string id = null)
         {
-            Log.Info(id);
+            logger.Log(id);
             return new JObject();
         }
 
         [HttpPost]
         public void Post(string id, JToken eventData)
         {
-            Log.Info("Post({0})", id);
+            try {
+
+                logger.Log(id);
+            }
+            catch(Exception ex)
+            {
+                internalLogger.Info(ex.Message);
+            }
         }
     }
 }

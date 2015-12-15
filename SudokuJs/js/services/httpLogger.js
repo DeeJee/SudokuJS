@@ -16,9 +16,7 @@
             });
         },
         savePuzzle: function (puzzle) {
-            console.log('httpLogger.savePuzzle(' + puzzle + ')')
-            console.log(puzzle);
-            return resource.save({ id:'aap', text:puzzle});
+            return resource.save(puzzle);
         }
     };
 });
