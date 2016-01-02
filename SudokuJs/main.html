@@ -10,11 +10,10 @@
     <style>
         div .cell {
             border: none;
-            height: 50px;
-            width: 50px;
+            /*height: 50px;
+            width: 50px;*/
+            background-color:lightblue;
             display: inline-block;
-            padding: 1px;
-            margin: auto;
         }
 
         .cell input[type=text] {
@@ -23,10 +22,15 @@
             font-size: 30px;
             text-align: center;
             float: left;
+            margin-bottom:0;
         }
 
         input[type="text"].given {
             background-color: lawngreen;
+        }
+
+        input[type="text"].hover{
+            background-color:pink;
         }
     </style>
 
@@ -39,7 +43,11 @@
     <script src="/js/controllers/SudokuController.js"></script>
     <script src="/js/services/SudokuLoader.js"></script>
     <script src="/js/services/SudokuSolver.js"></script>
-    <script src="/js/diversen/collection.js"></script>
+    <script src="/js/services/SilverSolver.js"></script>
+    <script src="/js/services/SudokuSolver2.js"></script>
+    <script src="/js/diversen//PuzzleEnumerator.js"></script>
+    <script src="/js/services/SudokuSolver2Phase.js"></script>
+    <script src="/js/diversen/Collection.js"></script>
     <script src="/lib/ngDialog/ngDialog.js"></script>
     <script src="/js/controllers/LoadSudokuController.js"></script>
     <script src="/js/services/httpLogger.js"></script>
@@ -52,7 +60,7 @@
                 <h2>Open sudoku</h2>
                 <div>Vul de naam van de sudoku in</div>
 
-                <input type="text" id="fileName" ng-model="puzzle.name" />
+                <input type="text" id="fileName" ng-model="puzzleToLoad" />
             </div>
             <div class="ngdialog-buttons mt">
                 <button type="button" class="ngdialog-button ngdialog-button-primary" ng-click="openSudoku(puzzle.name)">OK</button>
@@ -63,7 +71,7 @@
                 <h2>Save sudoku</h2>
                 <div>Vul de naam van de sudoku in</div>
 
-                <input type="text" ng-model="puzzle.name" />
+                <input type="text" ng-model="puzzle.name" id="name"/>
             </div>
             <div class="ngdialog-buttons mt">
                 <button type="button" class="ngdialog-button ngdialog-button-primary" ng-click="saveSudoku(puzzle.name)">OK</button>
@@ -74,7 +82,7 @@
                 <div class="navbar-inner">
                     <ul class="nav">
                         <li><a class="nav" ng-click="newSudoku()">New</a></li>
-                        <li><a class="nav" ng-click="openSudoku()">Open</a></li>
+                        <li><a class="nav" ng-click="openSudokuDialog()">Open</a></li>
                         <li><a class="nav" ng-click="saveSudokuDialog()">Save</a></li>
                         <li><a class="nav" ng-click="solveSudoku()">Solve</a></li>
                     </ul>
@@ -83,17 +91,15 @@
             <div><input type="text" ng-model="puzzle.name" /></div>
             <div id="grid">
 
-                <div ng-repeat="row in puzzle.rows" class="row">
-                    <div ng-repeat="cell in row.cells" class="cell">
-                        <input type="text" ng-model="cell.value" ng-class="cell.given" />
+                <div ng-repeat="row in puzzle.rows" >
+                    <div ng-repeat="cell in row.cells" class="cell"    ng-mouseover="showSiblings(this)"
+                               ng-mouseleave="hideSiblings(this)">
+                        <input type="text" ng-model="cell.value" ng-class="{given: cell.given, hover: cell.hover}" title="{{cell.title}}" 
+                            />
                     </div>
                 </div>
             </div>
         </form>
     </div>
-
-
-
-
 </body>
 </html>

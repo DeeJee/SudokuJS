@@ -1,6 +1,5 @@
 ﻿{
   "name": "empty9by9puzzle",
-  "imageUrl": "http://pascalprecht.github.com/slides/angularjs-insights/img/angularjs-logo.png",
   "rows": [
     {
       "cells": [

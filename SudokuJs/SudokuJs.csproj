@@ -86,9 +86,13 @@
     <Content Include="css\ngDialog-theme-plain.min.css" />
     <Content Include="css\ngDialog.css" />
     <Content Include="css\ngDialog.min.css" />
-    <Content Include="js\diversen\collection.js" />
+    <Content Include="js\diversen\Collection.js" />
+    <Content Include="js\diversen\PuzzleEnumerator.js" />
     <Content Include="js\services\httpLogger.js" />
     <Content Include="js\services\SudokuLoader.js" />
+    <Content Include="js\services\SilverSolver.js" />
+    <Content Include="js\services\SudokuSolver2Phase.js" />
+    <Content Include="js\services\SudokuSolver2.js" />
     <Content Include="js\services\SudokuSolver.js" />
     <Content Include="lib\angular\angular-resource.js" />
     <Content Include="lib\angular\angular-resource.min.js" />

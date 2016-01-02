@@ -27,6 +27,16 @@
         this.count = this.collection.length;
     }
 
+    this.contains = function (value) {
+        var result = false;
+        this.collection.forEach(function (arrayValue) {
+            if (arrayValue == value) {
+                result = true;
+            }
+        });
+        return result;
+    };
+
     this.forEach = function (block) {
         for (key in this.collection) {
             if (this.collection.hasOwnProperty(key)) {
@@ -45,5 +55,26 @@
             result += value + ' ';
         });
         return result;
-    }  
+    }
+
+    this.getEnumerator = function () {
+        return new CollectionEnumerator(this.collection);
+    }
+}
+
+var CollectionEnumerator = function (values) {
+    var index = -1;
+    this.collection = values;
+
+    this.moveNext = function () {
+        if (index < this.collection.length -1) {
+            index++;
+            return true;
+        }
+        return false;
+    }
+
+    this.current = function () {
+        return this.collection[index];
+    }
 }

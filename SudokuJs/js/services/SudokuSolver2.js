@@ -1,11 +1,11 @@
-﻿sudokuJs.factory('sudokuSolver', function (httpLogger) {
+﻿sudokuJs.factory('sudokuSolver2', function (httpLogger, $timeout) {
     var PuzzleEnumerator = function (puzzle) {
 
         this.puzzle = puzzle;
         var rowIndex = 0;
         var columnIndex = -1;
 
-        this.moveNext = function () {
+        this.moveNextCell = function () {
             if (columnIndex < this.puzzle.rows[0].cells.length - 1) {
                 columnIndex++;
             }
@@ -22,20 +22,47 @@
             return true;
         };
 
+        this.movePreviousCell = function () {
+            if (columnIndex > 0) {
+                columnIndex--;
+            }
+            else {
+                if (rowIndex > 0) {
+                    rowIndex--;
+                    columnIndex = this.puzzle.rows[0].cells.length - 1;
+                }
+                else {
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        this.moveNext = function () {
+            while (this.moveNextCell()) {
+                if (this.current().value === '')
+                    return this.current();
+            }
+            return false;
+        };
+
+        this.movePrevious = function () {
+            while (this.movePreviousCell()) {
+                var cell = this.current();
+                if (this.current().given != 'given')
+                    return this.current();
+            }
+            return false;
+        };
+
+
         this.current = function () {
             return this.puzzle.rows[rowIndex].cells[columnIndex];
         }
     }
 
-    var calculatePossibilities = function (puzzle) {
-        var enumerator = new PuzzleEnumerator(puzzle);
-        while (enumerator.moveNext()) {
-            var cell = enumerator.current();
-            cell.possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
-        }
-    }
-
-    var calculatePossibilitiesForCell = function (puzzle, row, column) {
+    var calculatePossibilities = function (puzzle, row, column) {
         var possibilities = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
         var valuesInRow = getValuesInRow(puzzle, row);
@@ -80,27 +107,6 @@
         return myCollection;
     }
 
-    var getCellsInBlock = function (puzzle, row, column) {
-        var intRow = parseInt(row / 3)
-        var minRow = 3 * intRow;
-        var maxRow = 3 * (intRow + 1) - 1;
-
-        var intColumn = parseInt(column / 3)
-        var minColumn = 3 * intColumn;
-        var maxColumn = 3 * (intColumn + 1) - 1;
-
-        var myCollection = new Collection();
-        //lus door alle rijen
-        for (var rowIndex = minRow; rowIndex <= maxRow; rowIndex++) {
-            for (var columnIndex = minColumn; columnIndex <= maxColumn; columnIndex++) {
-                var cell = puzzle.rows[rowIndex].cells[columnIndex];
-                myCollection.add(cell);
-            }
-        }
-
-        return myCollection;
-    }
-
     var getValuesInBlock = function (puzzle, row, column) {
         var intRow = parseInt(row / 3)
         var minRow = 3 * intRow;
@@ -127,7 +133,7 @@
     var solve = function (puzzle, rowIndex, columnIndex) {
         var value = puzzle.rows[rowIndex].cells[columnIndex];
         if (value.value === '') {
-            var possibilities = calculatePossibilitiesForCell(puzzle, rowIndex, columnIndex);
+            var possibilities = calculatePossibilities(puzzle, rowIndex, columnIndex);
             var tryValue = possibilities.get(0);
             if (tryValue) {
                 value.value = possibilities.get(0);
@@ -148,75 +154,53 @@
         teller++;
     }
 
-    var solveRecursively = function (puzzle, enumeratorIn, nesting) {
-        var enumerator = new PuzzleEnumerator(puzzle);
-        while (enumerator.moveNext()) {
-            var cell = enumerator.current();
-            if (cell.value === '') {
-                //proberen
-                //var possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
-                calculatePossibilities(puzzle);
+    var solveRecursively = function (puzzle, nesting, enumerator, oldValue) {
 
-                log(nesting + ' - (' + cell.rowIndex + ',' + cell.columnIndex + ') heeft mogelijkheden ' + cell.possibilities.toString());
-
-                if (cell.possibilities.count > 0) {
-                    for (var index = 0; index < cell.possibilities.count; index++) {
-                        var value = cell.possibilities.get(index);
-
-                        var message = nesting + ' - (' + cell.rowIndex + ',' + cell.columnIndex + ') probeer ' + value;
-                        log(message);
-
-                        cell.value = value;
-
-                        if (cell.rowIndex === puzzle.rows.length - 1 && cell.columnIndex === puzzle.rows[0].cells.length - 1) {
-                            //alles gevuld: opgelost
-                            return true;
-                        }
-                        //een niveau dieper gaan
-                        var opgelost = solveRecursively(puzzle, enumerator, nesting + 1);
-                        calculatePossibilities(puzzle);
-                        log(nesting + ' - Terugkomst uit solveRecursively');
-                        if (opgelost) {
-                            return true;
-                        }
-                        else {
-                            cell.value = '';
-                        }
-                    }
-                }
-                else {
-                    log(nesting + ' - Geen mogelijkheden voor cel (' + cell.rowIndex + ',' + cell.columnIndex + ')');
-                    return false;
-                }
+        var cell;
+        if (!oldValue) {
+            if (enumerator.moveNext()) {
+                cell = enumerator.current();
             }
             else {
-                log(nesting + ' - (' + cell.rowIndex + ',' + cell.columnIndex + ') == ' + cell.value);
+                return;
             }
         }
-        throw new DOMException('niet op te lossen');
+
+        var cell = enumerator.current();
+        var possibilities = calculatePossibilities(puzzle, cell.rowIndex, cell.columnIndex);
+
+        log(nesting + ' - (' + cell.rowIndex + ',' + cell.columnIndex + ') heeft mogelijkheden ' + possibilities.toString());
+
+        var possibility = possibilities.getEnumerator();
+        if (possibility.moveNext()) {
+            var value = possibility.current();
+            var message = nesting + ' - (' + cell.rowIndex + ',' + cell.columnIndex + ') probeer ' + value;
+            log(message);
+            cell.value = value;
+
+            //een niveau dieper gaan
+            $timeout(function () {
+                solveRecursively(puzzle, nesting + 1, enumerator, null);
+            }, 0);
+
+            log(nesting + ' - Terugkomst uit solveRecursively');
+        }
+        else {
+            log(nesting + ' - Geen mogelijkheden voor cel (' + cell.rowIndex + ',' + cell.columnIndex + ')');
+
+            var previousCell = enumerator.movePrevious();
+            var oldValue = previousCell.value;
+            previousCell.value = '';
+            $timeout(function () {
+                solveRecursively(puzzle, nesting + 1, enumerator, oldValue);
+            }, 0);
+        }
+        return;
     }
 
     function sleep(seconds) {
         var e = new Date().getTime() + (seconds * 1000);
         while (new Date().getTime() <= e) { }
-    }
-
-    var toggleSiblings = function (puzzle, cell, onOrOff) {
-        var rowIndex = cell.rowIndex;
-        var columnIndex = cell.columnIndex;
-
-        puzzle.rows.forEach(function (row) {
-            row.cells.forEach(function (cell) {
-                if (cell.rowIndex === rowIndex || cell.columnIndex === columnIndex) {
-                    cell.hover = onOrOff;
-                }
-            });
-        });
-
-        var cells = getCellsInBlock(puzzle, rowIndex, columnIndex);
-        cells.forEach(function (cell) {
-            cell.hover = onOrOff;
-        });
     }
 
     return {
@@ -228,8 +212,8 @@
                     cell.columnIndex = columnIndex;
                 }
             }
-
-            solveRecursively(puzzle, null, 0);
+            var enumerator = new PuzzleEnumerator(puzzle);
+            solveRecursively(puzzle, 0, enumerator, null);
 
             //var enumerator = new PuzzleEnumerator(puzzle);
             //while (enumerator.moveNext()) {
@@ -239,18 +223,13 @@
             //    $rootScope.$apply;
             //    sleep(1);
             //}
+
+
+
         },
 
         showPossibilities: function () {
-            calculatePossibilitiesForCell();
-        },
-
-        showSiblings: function (puzzle, cell) {
-            toggleSiblings(puzzle, cell, true);
-        },
-
-        hideSiblings: function (puzzle, cell) {
-            toggleSiblings(puzzle, cell, false);
+            calculatePossibilities();
         }
-    }
+    };
 });

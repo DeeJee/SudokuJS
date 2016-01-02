@@ -1,17 +1,24 @@
 ﻿'use strict';
 
-sudokuJs.controller('SudokuController', function SudokuController($scope, sudokuLoader, sudokuSolver, ngDialog, httpLogger, $timeout) {
+sudokuJs.controller('SudokuController', function SudokuController($scope, sudokuLoader, silverSolver, sudokuSolver, sudokuSolver2, sudokuSolver2Phase, ngDialog, httpLogger, $timeout) {
     this.sudokuLoader = sudokuLoader;
+    $scope.test = 'test';
 
     sudokuLoader.getPuzzle('easy').$promise
         .then(function (puzzle) {
             $scope.puzzle = puzzle;
 
-            var enumerator = new PuzzleEnumerator($scope.puzzle);
-            while (enumerator.moveNext()) {
-                var cell = enumerator.current();
-                if (cell.value) {
-                    enumerator.current().given = 'given';
+            for (var rowIndex = 0; rowIndex < puzzle.rows.length; rowIndex++) {
+                for (var columnIndex = 0; columnIndex < puzzle.rows[rowIndex].cells.length; columnIndex++) {
+                    var cell = puzzle.rows[rowIndex].cells[columnIndex];
+                    cell.rowIndex = rowIndex;
+                    cell.columnIndex = columnIndex;
+                    if (cell.value === '') {
+                        cell.title = calculatePossibilities($scope.puzzle, cell.rowIndex, cell.columnIndex).toString();
+                    }
+                    else {
+                        cell.given = true;
+                    }
                 }
             }
 
@@ -31,25 +38,23 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
 
     $scope.newSudoku = function () {
         console.log('new sudoku');
-        //sudokuLoader.getPuzzle('empty9by9puzzle').$promise
-        //.then(function (puzzle) { $scope.puzzle = puzzle; console.log('Puzzle loaded: '); console.log(puzzle) })
-        //.catch(function (response) { console.log(response); });
         $scope.puzzle.rows.forEach(function (row) {
             row.cells.forEach(function (cell) {
                 cell.value = '';
-                cell.given = '';
-
+                delete cell.given;
+                delete cell.title;
             });
         });
         $scope.puzzle.name = '';
     };
 
-    //$scope.openSudokuDialog = function () {
-    //    ngDialog.open({ template: 'openDialog', controller: 'SudokuController' });
-    //};
+    $scope.openSudokuDialog = function () {
+        ngDialog.open({ template: 'openDialog', controller: 'SudokuController' });
+    };
 
-    $scope.openSudoku = function (name) {
-        //ngDialog.close({ template: 'saveDialog' });
+    $scope.openSudoku = function () {
+        ngDialog.close({ template: 'saveDialog' });
+        var name = $scope.puzzleToLoad;
         sudokuLoader.getPuzzle(name).$promise
         .then(function (puzzle) {
             $scope.puzzle = puzzle;
@@ -70,13 +75,21 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
                .catch(function (event) { console.log('failure', event) });
     };
 
+    $scope.showSiblings = function (scope) {
+        sudokuSolver.showSiblings($scope.puzzle, scope.cell);
+    };
+
+    $scope.hideSiblings = function (scope) {
+        sudokuSolver.hideSiblings($scope.puzzle, scope.cell);
+    };
+
     var solveRecursively = function (puzzle, enumeratorIn, nesting) {
         var enumerator = new PuzzleEnumerator(puzzle);
         while (enumerator.moveNext()) {
             var cell = enumerator.current();
             if (cell.value === '') {
                 //proberen
-                var possibilities = calculatePossibilities(puzzle, cell.rowIndex, cell.columnIndex);
+                var possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
 
                 log(nesting + ' - (' + cell.rowIndex + ',' + cell.columnIndex + ') heeft mogelijkheden ' + possibilities.toString());
 
@@ -105,7 +118,7 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
                     }
                 }
                 else {
-                    log(nesting + ' - Geen mogelijkheden voor cel ' + cell.rowIndex + '-' + cell.columnIndex);
+                    log(nesting + ' - Geen mogelijkheden voor cel (' + cell.rowIndex + ',' + cell.columnIndex + ')');
                     return false;
                 }
             }
@@ -125,14 +138,12 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
             }
         }
 
-        solveRecursively(puzzle, null, 0);
-        
-      
-
-
-        addValue();
-
-      
+        silverSolver.solvePuzzle($scope.puzzle);
+        //sudokuSolver.solvePuzzle($scope.puzzle);
+        //sudokuSolver2.solvePuzzle($scope.puzzle);
+        //sudokuSolver2Phase.solvePuzzle($scope.puzzle);
+        //solveRecursively(puzzle, null, 0);
+        //addValue();
     }
 
     var addValue = function () {
@@ -140,11 +151,22 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
         while (enumerator.moveNext()) {
             var cell = enumerator.current();
             if (cell.value === '') {
-                cell.value = 9;
-                log('(' + cell.rowIndex + ', ' + cell.columnIndex + ')');
-                $timeout(function () {
-                    addValue();
-                }, 500);
+                var possibilities = calculatePossibilitiesForCell($scope.puzzle, cell.rowIndex, cell.columnIndex);
+                var enumerator = possibilities.getEnumerator();
+                if (enumerator.moveNext()) {
+                    cell.value = enumerator.current();
+                    log('(' + cell.rowIndex + ', ' + cell.columnIndex + ')');
+                    $timeout(function () {
+                        addValue();
+                    }, 500);
+                }
+                else {
+                    //terug navigatie
+                    $timeout(function () {
+                        addValue();
+                    }, 500)
+                }
+
                 return;
             }
         }
@@ -152,38 +174,38 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
 
     var teller = 0;
     var log = function (text) {
-        var paddedText = teller +  '|\'' + text + '\'';
+        var paddedText = teller + '|\'' + text + '\'';
         httpLogger.savePuzzle({ name: paddedText });
-//        console.log(paddedText);
+        //        console.log(paddedText);
         teller++;
     }
 
-    var PuzzleEnumerator = function (puzzle) {
-        this.puzzle = puzzle;
-        var rowIndex = 0;
-        var columnIndex = -1;
+    //var PuzzleEnumerator = function (puzzle) {
+    //    this.puzzle = puzzle;
+    //    var rowIndex = 0;
+    //    var columnIndex = -1;
 
-        this.moveNext = function () {
-            if (columnIndex < this.puzzle.rows[0].cells.length - 1) {
-                columnIndex++;
-            }
-            else {
-                if (rowIndex < this.puzzle.rows.length - 1) {
-                    rowIndex++;
-                    columnIndex = 0;
-                }
-                else {
-                    return false;
-                }
-            }
+    //    this.moveNext = function () {
+    //        if (columnIndex < this.puzzle.rows[0].cells.length - 1) {
+    //            columnIndex++;
+    //        }
+    //        else {
+    //            if (rowIndex < this.puzzle.rows.length - 1) {
+    //                rowIndex++;
+    //                columnIndex = 0;
+    //            }
+    //            else {
+    //                return false;
+    //            }
+    //        }
 
-            return true;
-        };
+    //        return true;
+    //    };
 
-        this.current = function () {
-            return this.puzzle.rows[rowIndex].cells[columnIndex];
-        }
-    }
+    //    this.current = function () {
+    //        return this.puzzle.rows[rowIndex].cells[columnIndex];
+    //    }
+    //}
 
 
     var calculatePossibilities = function (puzzle, row, column) {
@@ -253,8 +275,11 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
 
         return myCollection;
     }
-    function sleep(seconds) {
-        var e = new Date().getTime() + (seconds * 1000);
-        while (new Date().getTime() <= e) { }
-    }
+
+
+
+    //function sleep(seconds) {
+    //    var e = new Date().getTime() + (seconds * 1000);
+    //    while (new Date().getTime() <= e) { }
+    //}
 });
