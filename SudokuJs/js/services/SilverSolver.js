@@ -121,11 +121,29 @@
 
                 if (cell.value == '') //als de cel leeg is waarde proberen
                 {
+                    //var possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
                     var test = calculatePossibilities(puzzle);
-                    for (var number = 0; number < puzzle.rows[0].cells.length; number++) {   //maak een mogelijkheden object dat de volgende aanlevert
-                        if (cell.possibilities.contains(number + 1)) {
-                            //if (cell.possibilities.Contains(number)) {
-                            cell.value = number + 1;
+                    //cell.possibilities.forEach(function (possibility) {
+                    //    cell.value = possibility;
+                    //    Thread.Sleep(delay);
+
+                    //    solveRecursively(puzzle, nesting);
+                    //    if (!Opgelost) {
+                    //        cell.value = '';
+                    //        Thread.Sleep(delay);
+
+                    //        calculatePossibilities(puzzle);
+                    //    }
+                    //});
+
+                    //if (cell.value == '') {
+                    //        bContinue = false;
+                    //}
+
+                    for (var index = 0; index < puzzle.rows[0].cells.length; index++) {   //maak een mogelijkheden object dat de volgende aanlevert
+                        var number = index + 1;
+                        if (cell.possibilities.contains(number)) {
+                            cell.value = number;
                             //Thread.Sleep(delay);
 
                             solveRecursively(puzzle, nesting);
@@ -134,10 +152,11 @@
                                 //Thread.Sleep(delay);
 
                                 //only the possibilities of the cells affected by the change are calculated
+                                //calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
                                 var test = calculatePossibilities(puzzle);
                             }
                         }//if possibility contains number
-                        if (number == puzzle.rows[0].cells.length - 1 && cell.value == '') {//als alle mogelijkheden geprobeerd zijn en de puzzle is niet opgelost
+                        if (index == puzzle.rows[0].cells.length - 1 && cell.value == '') {//als alle mogelijkheden geprobeerd zijn en de puzzle is niet opgelost
                             bContinue = false;
                         }
                     }//waarde proberen
@@ -170,6 +189,51 @@
         });
     }
 
+    var validatePuzzle = function (puzzle) {
+        checkRow(puzzle);
+        checkColumns(puzzle);
+    };
+
+    var checkColumns = function (puzzle) {
+        for (var columnIndex = 0; columnIndex < puzzle.rows[0].cells.length; columnIndex++) {
+            var unique = new Collection();
+            puzzle.rows.forEach(function (row) {
+                var cell = row.cells[columnIndex];
+                if (unique.contains(cell.value)) {
+                    cell.error = true;
+                    puzzle.rows.forEach(function (row) {
+                        var otherCell = row.cells[columnIndex];
+                        if (otherCell.value == cell.value) {
+                            otherCell.error = true;
+                        }
+                    });
+                }
+                else {
+                    unique.add(cell.value);
+                }
+            });
+        }
+    }
+
+    var checkRow = function (puzzle) {
+        puzzle.rows.forEach(function (row) {
+            var unique = new Collection();
+            row.cells.forEach(function (cell) {
+                if (unique.contains(cell.value)) {
+                    cell.error = true;
+                    row.cells.forEach(function (othercell) {
+                        if (othercell.value == cell.value) {
+                            othercell.error = true;
+                        }
+                    });
+                }
+                else {
+                    unique.add(cell.value);
+                }
+            });
+        });
+    }
+
     return {
         solvePuzzle: function (puzzle) {
             for (var rowIndex = 0; rowIndex < puzzle.rows.length; rowIndex++) {
@@ -180,7 +244,7 @@
                 }
             }
 
-            solveRecursively(puzzle, null, 0);
+            solveRecursively(puzzle, 0);
         },
 
         showPossibilities: function () {
@@ -193,6 +257,14 @@
 
         hideSiblings: function (puzzle, cell) {
             toggleSiblings(puzzle, cell, false);
+        },
+
+        validatePuzzle: function (puzzle) {
+            validatePuzzle(puzzle);
+        },
+
+        calculatePossibilities: function (puzzle, cell) {
+            return calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
         }
     }
 });

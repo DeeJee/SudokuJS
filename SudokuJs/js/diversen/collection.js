@@ -51,9 +51,13 @@
 
     this.toString = function () {
         var result = '';
-        this.collection.forEach(function (value) {
-            result += value + ' ';
-        });
+        for (var index = 0; index < this.collection.length; index++) {
+            var value = this.collection[index];
+            result += value;
+            if (index < this.collection.length - 1) {
+                result += ',';
+            }
+        }
         return result;
     }
 
