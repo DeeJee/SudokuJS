@@ -4,7 +4,7 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
     this.sudokuLoader = sudokuLoader;
     $scope.test = 'test';
 
-    sudokuLoader.getPuzzle('easy').$promise
+    sudokuLoader.getPuzzle('medium').$promise
         .then(function (puzzle) {
             $scope.puzzle = puzzle;
 
@@ -28,14 +28,6 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
         .catch(function (response) { console.log(response); });
 
     $scope.solveSudoku = function () {
-        for (var rowIndex = 0; rowIndex < $scope.puzzle.rows.length; rowIndex++) {
-            for (var columnIndex = 0; columnIndex < $scope.puzzle.rows[rowIndex].cells.length; columnIndex++) {
-                var cell = $scope.puzzle.rows[rowIndex].cells[columnIndex];
-                cell.rowIndex = rowIndex;
-                cell.columnIndex = columnIndex;
-            }
-        }
-
         silverSolver.solvePuzzle($scope.puzzle);
     };
 

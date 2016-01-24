@@ -1,10 +1,10 @@
-﻿sudokuJs.factory('silverSolver', function (httpLogger) {
+﻿sudokuJs.factory('silverSolver', function (httpLogger, htmlLogger) {
     var calculatePossibilities = function (puzzle) {
         puzzle.rows.forEach(function (row) {
             row.cells.forEach(function (cell) {
                 if (!cell.given) {
                     cell.possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
-                }                
+                }
             });
         });
     }
@@ -148,7 +148,8 @@
     var teller = 0;
     var log = function (text) {
         var paddedText = teller + '|\'' + text + '\'';
-        httpLogger.savePuzzle({ name: paddedText });
+        //httpLogger.savePuzzle({ name: paddedText });
+        htmlLogger.log(text+'\n');
         //        console.log(paddedText);
         teller++;
     }
@@ -168,16 +169,8 @@
 
                 if (cell.value == '') //als de cel leeg is waarde proberen
                 {
-                    ///////////////test
-                    cell.siblings.forEach(function (cell) {
-                        console.log("row:" + cell.rowIndex + 'column: ' + cell.columnIndex);
-                    });
-
-//////
-
-
                     //var possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
-                    var test = calculatePossibilities(puzzle);
+                    //calculatePossibilities(puzzle);
                     //cell.possibilities.forEach(function (possibility) {
                     //    cell.value = possibility;
                     //    Thread.Sleep(delay);
@@ -199,16 +192,21 @@
                         var number = index + 1;
                         if (cell.possibilities.contains(number)) {
                             cell.value = number;
+                           // log('Row: ' + cell.rowIndex + ', Column: ' +cell.columnIndex + ' value: ' +number);
                             //Thread.Sleep(delay);
 
+                            cell.siblings.forEach(function (cell) {
+                                cell.possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
+                            });
                             solveRecursively(puzzle, nesting);
+                            //log('Terugkomst uit solverecursively, nesting: ' + nesting);
                             if (!Opgelost) {
                                 cell.value = '';
                                 //Thread.Sleep(delay);
-
-                                //only the possibilities of the cells affected by the change are calculated
-                                //calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
-                                var test = calculatePossibilities(puzzle);
+    
+                                cell.siblings.forEach(function (cell) {
+                                    cell.possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
+                                });
                             }
                         }//if possibility contains number
                         if (index == puzzle.rows[0].cells.length - 1 && cell.value == '') {//als alle mogelijkheden geprobeerd zijn en de puzzle is niet opgelost
@@ -280,6 +278,8 @@
 
     return {
         solvePuzzle: function (puzzle) {
+            htmlLogger.log('solving');
+            var start = new Date();
             for (var rowIndex = 0; rowIndex < puzzle.rows.length; rowIndex++) {
                 for (var columnIndex = 0; columnIndex < puzzle.rows[rowIndex].cells.length; columnIndex++) {
                     var cell = puzzle.rows[rowIndex].cells[columnIndex];
@@ -288,8 +288,9 @@
                     cell.siblings = getSiblings(puzzle, cell.rowIndex, cell.columnIndex);
                 }
             }
-
+            calculatePossibilities(puzzle);
             solveRecursively(puzzle, 0);
+            htmlLogger.log('Opgelost in ' + (new Date() - start )+ ' milliseconden');
         },
 
         showPossibilities: function () {

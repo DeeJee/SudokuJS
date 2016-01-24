@@ -88,6 +88,7 @@
     <Content Include="css\ngDialog.min.css" />
     <Content Include="js\diversen\Collection.js" />
     <Content Include="js\diversen\PuzzleEnumerator.js" />
+    <Content Include="js\services\htmlLogger.js" />
     <Content Include="js\services\httpLogger.js" />
     <Content Include="js\services\SudokuLoader.js" />
     <Content Include="js\services\SilverSolver.js" />
@@ -126,6 +127,7 @@
     </Content>
     <Content Include="puzzles\empty9by9puzzle.json" />
     <Content Include="packages.config" />
+    <Content Include="puzzles\medium.json" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
