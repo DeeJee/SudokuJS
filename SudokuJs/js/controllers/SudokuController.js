@@ -83,11 +83,11 @@ sudokuJs.controller('SudokuController', function SudokuController($scope, sudoku
     };
 
     $scope.showSiblings = function (scope) {
-        sudokuSolver.showSiblings($scope.puzzle, scope.cell);
+        silverSolver.showSiblings($scope.puzzle, scope.cell);
     };
 
     $scope.hideSiblings = function (scope) {
-        sudokuSolver.hideSiblings($scope.puzzle, scope.cell);
+        silverSolver.hideSiblings($scope.puzzle, scope.cell);
     };
 
     $scope.validateSudoku = function () {

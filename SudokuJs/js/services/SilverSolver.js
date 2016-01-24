@@ -4,9 +4,36 @@
             row.cells.forEach(function (cell) {
                 if (!cell.given) {
                     cell.possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
-                }
+                }                
             });
         });
+    }
+
+    var getSiblings = function (puzzle, rowIndex, columnIndex) {
+        var siblings = new Collection();
+
+        var cellsInRow = getCellsInRow(puzzle, rowIndex);
+        cellsInRow.forEach(function (cell) {
+            siblings.add(cell);
+        });
+
+        var cellsInColumn = getCellsInColumn(puzzle, columnIndex);
+        cellsInColumn.forEach(function (cell) {
+            //testen
+            if (cell.rowIndex != rowIndex) { //deze zit er al in
+                siblings.add(cell);
+            }
+
+        });
+
+        var cellsInBlock = getCellsInBlock(puzzle, rowIndex, columnIndex);
+        cellsInBlock.forEach(function (cell) {
+            if (!(cell.rowIndex == rowIndex && cell.columnIndex == columnIndex)) { //deze zit er al in
+                siblings.add(cell);
+            }
+        });
+
+        return siblings;
     }
 
     var calculatePossibilitiesForCell = function (puzzle, row, column) {
@@ -30,12 +57,32 @@
         return possibilities;
     }
 
+    var getCellsInRow = function (puzzle, row) {
+        var myCollection = new Collection();
+        puzzle.rows[row].cells.forEach(function (cell) {
+            myCollection.add(cell);
+        });
+
+        return myCollection;
+    }
+
     var getValuesInRow = function (puzzle, row) {
         var myCollection = new Collection();
         puzzle.rows[row].cells.forEach(function (cell) {
             if (cell.value != '') {
                 myCollection.add(cell.value);
             }
+        });
+
+        return myCollection;
+    }
+
+    var getCellsInColumn = function (puzzle, column) {
+        var myCollection = new Collection();
+        //lus door alle rijen
+        puzzle.rows.forEach(function (row) {
+            var cell = row.cells[column];
+            myCollection.add(cell);
         });
 
         return myCollection;
@@ -121,6 +168,14 @@
 
                 if (cell.value == '') //als de cel leeg is waarde proberen
                 {
+                    ///////////////test
+                    cell.siblings.forEach(function (cell) {
+                        console.log("row:" + cell.rowIndex + 'column: ' + cell.columnIndex);
+                    });
+
+//////
+
+
                     //var possibilities = calculatePossibilitiesForCell(puzzle, cell.rowIndex, cell.columnIndex);
                     var test = calculatePossibilities(puzzle);
                     //cell.possibilities.forEach(function (possibility) {
@@ -172,19 +227,8 @@
     }//solveRecursively
 
     var toggleSiblings = function (puzzle, cell, onOrOff) {
-        var rowIndex = cell.rowIndex;
-        var columnIndex = cell.columnIndex;
-
-        puzzle.rows.forEach(function (row) {
-            row.cells.forEach(function (cell) {
-                if (cell.rowIndex === rowIndex || cell.columnIndex === columnIndex) {
-                    cell.hover = onOrOff;
-                }
-            });
-        });
-
-        var cells = getCellsInBlock(puzzle, rowIndex, columnIndex);
-        cells.forEach(function (cell) {
+        var siblings = getSiblings(puzzle, cell.rowIndex, cell.columnIndex);
+        siblings.forEach(function (cell) {
             cell.hover = onOrOff;
         });
     }
@@ -241,6 +285,7 @@
                     var cell = puzzle.rows[rowIndex].cells[columnIndex];
                     cell.rowIndex = rowIndex;
                     cell.columnIndex = columnIndex;
+                    cell.siblings = getSiblings(puzzle, cell.rowIndex, cell.columnIndex);
                 }
             }
 
